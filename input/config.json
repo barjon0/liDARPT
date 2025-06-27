@@ -1,0 +1,17 @@
+{
+  "pathRequestFile": "../input/requests/random_requests/markt-karl/long_window/L9-15-100.csv",
+  "pathNetworkFile": "../input/bus_networks/real_networks/markt-karl.json",
+  "pathCPLEX": "/nix/store/ygc2mdbmacxs0mk6kfw34zx36ypr9aa8-cplex-22.11/cplex/bin/x86-64_linux/cplex",
+  "outputPath": "../output/InterestingOutput/SingleObj_3/markt-karl/long",
+  "context": "static",
+  "solver": "eventMILP",
+  "averageKmH": 65,
+  "KmPerUnit": 2,
+  "costPerKM": 0.15,
+  "co2PerKM": 0.208,
+  "capacityPerLine": 6,
+  "numberOfExtraTransfers": 1,
+  "maxDelayEquation": "1.2 * math.log(x) / math.log(1.2)",
+  "transferMinutes": 2,
+  "timeWindowMinutes": 15
+}

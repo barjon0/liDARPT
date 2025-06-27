@@ -1,0 +1,37 @@
+{
+  "stops": [
+    {"id": 0, "coordinates": [0.5,8.5]},
+    {"id": 1, "coordinates": [0.5,6.5]},
+    {"id": 2, "coordinates": [0.5,4.5]},
+    {"id": 3, "coordinates": [0.5,3]},
+    {"id": 4, "coordinates": [3.5,3]},
+    {"id": 5, "coordinates": [6,3]},
+    {"id": 6, "coordinates": [6.5,5]},
+    {"id": 7, "coordinates": [3.5,5]},
+    {"id": 8, "coordinates": [3.5,6.5]},
+    {"id": 9, "coordinates": [3.5,8.5]},
+    {"id": 10, "coordinates": [6.5,8.5]},
+    {"id": 11, "coordinates": [12,8.5]},
+    {"id": 12, "coordinates": [15,10]},
+    {"id": 13, "coordinates": [9.5,10]},
+    {"id": 14, "coordinates": [6.5,10]},
+    {"id": 15, "coordinates": [3.5,10]},
+    {"id": 16, "coordinates": [3.5,1]},
+    {"id": 17, "coordinates": [0.5,10]},
+    {"id": 18, "coordinates": [0.5,12]},
+    {"id": 19, "coordinates": [14,10]},
+    {"id": 20, "coordinates": [6.5,12]}
+  ],
+  "lines": [
+    {"id": 663, "stops": [16,4,5,6,7,8,10,13,14,15,17,18], "depot": [3.5,1], "startTime": "07:00:00", "endTime": "19:00:00"},
+    {"id": 661, "stops": [12,11,10,9,8,7,6,5,4,3,2,1,0], "depot": [15,10], "startTime": "07:00:00", "endTime": "19:00:00"},
+    {"id": 660, "stops": [12,19,13,14,20,15,17,18], "depot": [15,10], "startTime": "07:00:00", "endTime": "19:00:00"},
+    {"id": 662, "stops": [16,4,3,2,1,0], "depot": [3.5,1], "startTime": "07:00:00", "endTime": "19:00:00"}
+  ],
+  "busses": [
+    {"id": 3, "line": 663},
+    {"id": 1, "line": 661},
+    {"id": 2, "line": 662},
+    {"id": 0, "line": 660}
+  ]
+}

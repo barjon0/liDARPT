@@ -1,0 +1,14 @@
+{
+  "stops": [
+    {"id": 0, "coordinates": [0,0]},
+    {"id": 1, "coordinates": [2,0]},
+    {"id": 2, "coordinates": [4,0]},
+    {"id": 3, "coordinates": [6,0]}
+  ],
+  "lines": [
+    {"id": 0, "stops": [0,1,2,3], "depot": [3,1], "startTime": "07:00:00", "endTime": "19:00:00"}
+  ],
+  "busses": [
+    {"id": 0, "line": 0}
+  ]
+}

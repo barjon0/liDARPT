@@ -1,0 +1,21 @@
+All three networks are inspired by real plans around würzburg
+
+Testing: for markt-karl(-lohr): unit-to-km = 2, average kmh = 65
+for sw-geo: unit-to-km = 3, average kmh = 70
+for sw-schlee: unit-to-km = 1.5, average kmh = 65
+
+1.2 * log_1.2(x) for extra deviation
+
+Wert-markt: 661 connects Marktheidenfeld and nearby villages; 663 connects Wertheim and nearby villages, both lines intersect/travel along 6 same towns
+
+wert-markt_v2: add 660, 662 -> connect some villages directly to nearby city, transfer not necessary
+
+karl-markt: 3-lines connecting karlstadt and marktheidenfeld, all three also stoping in zellingen, creating 2 closed circles
+
+karl-markt-lohr: adds 2 more lines, connecting lohr into the network , creating more circles and transfer points
+
+TESTING:
+-aggregate system efficiency, accepted requests, other key figures across instances
+-what makes an instance too complex for solver? Assumption: high density and many route options (but can we formulate this even clearer?)
+-(how important are multiple busses for efficiency? / how many should on euse based on density)
+-compare figures to results with DARP
