@@ -344,7 +344,7 @@ class CplexSolver:
 
             self.model.objective.set_linear(obj_pairs)
             self.model.solve()
-
+            print("Goodbye")
             Global.INTEGRALITY_GAP_SECOND = int(self.model.solution.MIP.get_mip_relative_gap() * 100)
 
         # solve one more time and minimize B*-variables
@@ -522,5 +522,7 @@ class CplexSolver:
         if len(intersect) > 0:
             print("what is happening")
             '''
+
+
 
         return all_plans

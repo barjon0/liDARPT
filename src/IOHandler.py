@@ -166,13 +166,13 @@ def fill_time_windows(request: Request, split_req_list: List[SplitRequest]):
             split_req.latest_start_time = prop_time_lat_start
 
 
-def main(path_2_config: str):
+def main(path_2_config: str, path_to_req, speed: float, unitDist: float, output_path_full):
     with open(path_2_config, 'r') as config_file:
         config: dict = json.load(config_file)
 
     Global.COMPUTATION_START_TIME = time.time()
-    Global.AVERAGE_KMH = config.get('averageKmH')
-    Global.KM_PER_UNIT = config.get('KmPerUnit')
+    Global.AVERAGE_KMH = speed
+    Global.KM_PER_UNIT = unitDist
     Global.COST_PER_KM = config.get('costPerKM')
     Global.CO2_PER_KM = config.get('co2PerKM')
     Global.CAPACITY_PER_LINE = config.get('capacityPerLine')
@@ -182,9 +182,12 @@ def main(path_2_config: str):
     Global.TIME_WINDOW_SECONDS = config.get('timeWindowMinutes') * 60
     Global.CPLEX_PATH = config.get('pathCPLEX')
 
-    request_path: str = config.get('pathRequestFile')
-    network_path: str = config.get('pathNetworkFile')
-    output_path: str = config.get('outputPath')
+    request_path: str = path_to_req
+    print(path_to_req)
+    network_name = path_to_req.split("\\")[-3]
+    network_file_path = "../input/bus_networks/real_networks"
+    network_path: str = network_file_path + "\\" + network_name + ".json"
+    output_path: str = output_path_full
     context_str: str = config.get('context')
     solver_str: str = config.get('solver')
 
@@ -367,6 +370,8 @@ def create_output(requests: Set[Request], plans: List[Route], base_output_path: 
     fig = visualize_plan(plans, lines)
     fig.savefig(f"{path_to_output}/plan.png")
 
+    print("Hi my name is: " + path_to_output)
+
     for bus in buses:
         with open(f"{path_to_output}/bus_{bus.id}_out.csv", mode="w", newline="", encoding="utf-8") as file:
             writer = csv.writer(file)
@@ -436,6 +441,6 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         # The first argument is the file path
         config_path = sys.argv[1]
-        main(config_path)
+        main(config_path, sys.argv[2], float(sys.argv[3]), float(sys.argv[4]), sys.argv[5])
     else:
         print("Please provide the file path to the config file as an argument.")
