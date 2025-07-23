@@ -34,7 +34,7 @@ This file details the bus network in a .json format, consisting of stops, lines 
   - id: integer  
   - coordinates: list of floats of length 2 
 
-lines: list of objects with: 
+- lines: list of objects with: 
   - id: integer
   - stops: list of integers (stop-ids)
   - depot: list of floats of length 2 (coordinate)
