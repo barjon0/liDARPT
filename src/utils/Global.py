@@ -1,3 +1,16 @@
+"""
+© 2025 Jonas Barth
+
+This file is licensed under the Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License (CC BY-NC-SA 4.0).
+
+You may share and adapt the material for non-commercial use, provided you give appropriate credit,
+indicate if changes were made, and distribute your contributions under the same license.
+
+License: https://creativecommons.org/licenses/by-nc-sa/4.0/
+
+File: Global.py
+Description: Constant variables shared across different files.
+"""
 AVERAGE_KMH: int
 TRANSFER_SECONDS: int
 NUMBER_OF_EXTRA_TRANSFERS: int

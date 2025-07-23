@@ -1,21 +1,37 @@
+"""
+© 2025 Jonas Barth
+
+This file is licensed under the Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License (CC BY-NC-SA 4.0).
+
+You may share and adapt the material for non-commercial use, provided you give appropriate credit,
+indicate if changes were made, and distribute your contributions under the same license.
+
+License: https://creativecommons.org/licenses/by-nc-sa/4.0/
+
+File: Executor.py
+Description: Traverses through given plan, up to a certain time,
+            Stores information on bus and request locations.
+NOTE: also intended for use in a dynamic setting, however still lacks some logic required
+"""
 from typing import Set, Dict, List
-
-from utils import Global
-from utils.demand.AbstractRequest import Request
-from utils.helper import Helper, Timer
-from utils.helper.Timer import TimeImpl
-from utils.network.Bus import Bus
-from utils.network.Stop import Stop
-
-from utils.plan.Route import Route
-from utils.plan.RouteStop import RouteStop
+from utils import Global, Timer
+from models.Demand import Request
+from utils.Timer import TimeImpl
+from models.Network import Bus, Stop
+from models.Plan import RouteStop, Route
 
 
 class Executor:
+    """
+    Traverses through given plan, up to a certain time and
+    stores information on bus and request locations.
+    """
+
     def __init__(self, busses: List[Bus], requests: Set[Request]):
         self.user_locations: Dict[Request, Stop] = {x: x.pick_up_location for x in requests}  # for waiting users
         self.passengers: Dict[Bus, Set[Request]] = {x: set() for x in busses}
-        self.bus_locations: Dict[Bus, Stop] = {x: x.line.depot for x in busses}  # locations of bus (or next location bus is arriving at)
+        self.bus_locations: Dict[Bus, Stop] = {x: x.line.depot for x in
+                                               busses}  # locations of bus (or next location bus is arriving at)
         self.bus_delay: Dict[Bus, int] = {x: 0 for x in busses}  # time of bus to arriving at next stop
         self.routes = [Route(x) for x in busses]
         self.requests = requests
@@ -23,6 +39,12 @@ class Executor:
         self.routes.sort(key=lambda x: x.bus.id)
 
     def check_plan(self, done_r_stops: List[RouteStop], final_time: TimeImpl = None):
+        """
+        Validates the current plan, for example pick-up and drop-off locations and time windows of requests.
+        Updates location of buses and requests. Throws error if invalid.
+        :param done_r_stops: list of all Routestops, sorted by arrival time
+        :param final_time: executes plan up to this time
+        """
         waiting_bus_stops: List[RouteStop] = []
         curr_time: TimeImpl
         for r_stop in done_r_stops:
@@ -59,7 +81,7 @@ class Executor:
                 else:
                     u_dropped.act_end_time = r_stop.arriv_time
 
-            Helper.insert_sorted(waiting_bus_stops, r_stop)
+            insert_sorted(waiting_bus_stops, r_stop)
 
         # DYNAMIC CASE: for waiting_bus_events change depart_time and empty pick-up set if not finished
         if final_time is not None:
@@ -89,20 +111,26 @@ class Executor:
         for request in self.requests:
             if request.act_start_time is not None:
                 if not (request.earl_start_time <= request.act_start_time <= request.latest_start_time):
-                    raise ValueError(f"The pick-up time window of request {request.id} not respected; Window: [{request.earl_start_time} : {request.latest_start_time}], actual time: {request.act_start_time}")
+                    raise ValueError(
+                        f"The pick-up time window of request {request.id} not respected; Window: [{request.earl_start_time} : {request.latest_start_time}], actual time: {request.act_start_time}")
                 if request.act_end_time is None:
                     raise ValueError(f"Request {request.id} was picked up but not delivered")
                 if not (request.earl_arr_time <= request.act_end_time <= request.latest_arr_time):
-                    raise ValueError(f"The drop-off time window of request {request.id} not respected; Window: [{request.earl_arr_time} : {request.latest_arr_time}], actual time: {request.act_end_time}")
+                    raise ValueError(
+                        f"The drop-off time window of request {request.id} not respected; Window: [{request.earl_arr_time} : {request.latest_arr_time}], actual time: {request.act_end_time}")
                 time_travelled = (request.act_end_time - request.act_start_time).get_in_seconds()
                 max_travel_time = (request.latest_arr_time - request.latest_start_time).get_in_seconds()
                 if time_travelled > (max_travel_time + 0.1):
-                    raise ValueError(f"Maximum travel time of request {request.id} not respected; Time travelled: {time_travelled}, Maximum Time: {max_travel_time}")
+                    raise ValueError(
+                        f"Maximum travel time of request {request.id} not respected; Time travelled: {time_travelled}, Maximum Time: {max_travel_time}")
 
-    # could observe everything here make sure there are no inconsistencies
     def execute_plan(self, curr_routes: List[Route], new_requests: Set[Request], time_next: TimeImpl):
-        # if time_next = none : -> just copy entire plan to result
-        # else: look through curr. route until just before time_next -> copy to result -> update dictionaries
+        """
+        Executes the plan, triggered by context.
+        :param curr_routes: list of bus routes
+        :param new_requests: newly added requests
+        :param time_next: executes plan up to this time
+        """
         self.user_locations |= {x: x.pick_up_location for x in new_requests if x.route_int is not None}
 
         curr_routes.sort(key=lambda x: x.bus.id)
@@ -111,12 +139,13 @@ class Executor:
         for route in curr_routes:
             for i in range(0, len(route.stop_list) - 1):
                 travel_time_min = Timer.calc_time(
-                    Helper.calc_distance(route.stop_list[i].stop, route.stop_list[i+1].stop))
-                if route.stop_list[i+1].arriv_time <= route.stop_list[i].depart_time:
+                    route.stop_list[i].stop.calc_distance(route.stop_list[i + 1].stop))
+                if route.stop_list[i + 1].arriv_time <= route.stop_list[i].depart_time:
                     print_out_route(route.stop_list)
-                needed_time = (route.stop_list[i+1].arriv_time - route.stop_list[i].depart_time).get_in_seconds()
+                needed_time = (route.stop_list[i + 1].arriv_time - route.stop_list[i].depart_time).get_in_seconds()
                 if (travel_time_min - 0.1) > needed_time:
-                    raise ValueError(f"Travel times are not respected in solution; Minimum Time: {travel_time_min / 60}, Needed time: {needed_time / 60}")
+                    raise ValueError(
+                        f"Travel times are not respected in solution; Minimum Time: {travel_time_min / 60}, Needed time: {needed_time / 60}")
 
         if time_next is None:
             for route_count in range(len(curr_routes)):
@@ -152,6 +181,14 @@ class Executor:
             done_r_stops.sort(key=lambda x: x.arriv_time)
             self.check_plan(done_r_stops)
 
+
 def print_out_route(route: List[RouteStop]):
     for stopr in route:
         print(str(stopr) + " arrival time: " + str(stopr.arriv_time) + " depart time: " + str(stopr.depart_time))
+
+
+def insert_sorted(waiting_bus_stops: List[RouteStop], r_stop: RouteStop):
+    i = 0
+    while i < len(waiting_bus_stops) and waiting_bus_stops[i].depart_time < r_stop.depart_time:
+        i += 1
+    waiting_bus_stops.insert(i, r_stop)
