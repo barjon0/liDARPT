@@ -24,7 +24,8 @@ from utils.Timer import TimeImpl
 from models.Plan import RouteStop
 
 
-def calc_fastest(pick_up_location: Stop, drop_off_location: Stop, network_graph: LineGraph, number_of_passengers: int) -> Tuple[int, int]:
+def calc_fastest(pick_up_location: Stop, drop_off_location: Stop, network_graph: LineGraph,
+                 number_of_passengers: int) -> Tuple[int, int]:
     """
     Calculates the fastest route of a request from pick-up to drop-off with Dijkstra-Algorithm.
     :param pick_up_location: pick-up stop of request
@@ -71,6 +72,7 @@ def calc_fastest(pick_up_location: Stop, drop_off_location: Stop, network_graph:
     fast_time, transfers = queue.final_vals[drop_off_location], pred_dict[drop_off_location][1]
     return fast_time, transfers
 
+
 def complete_request(pick_up: Stop, drop_off: Stop, network_graph: LineGraph, number_of_passengers: int):
     """
     Fills out required info from data input of request
@@ -83,7 +85,7 @@ def complete_request(pick_up: Stop, drop_off: Stop, network_graph: LineGraph, nu
     # calculate fastest time -> account for transfers -> plug into max_delay_equation, return corresp. km
     fastest_time, numb_transfers = calc_fastest(pick_up, drop_off, network_graph, number_of_passengers)
     assert fastest_time is not Global.INFINITE_INT
-    long_delay: int = 60 * max(0, round(eval(Global.MAX_DELAY_EQUATION, {"math": math, "x": (fastest_time/60)})))
+    long_delay: int = 60 * max(0, round(eval(Global.MAX_DELAY_EQUATION, {"math": math, "x": (fastest_time / 60)})))
 
     return long_delay + fastest_time, numb_transfers, fastest_time
 
@@ -112,7 +114,7 @@ def rec_dfs(last_line: LineEdge, curr_seconds: int, curr_transfers: int, prev_vi
     else:
         curr_open.append(look_up_dict[last_line])
         if last_line.v2 == target:
-            return curr_open
+            return [curr_open]
         else:
             prev_visited.add(last_line.v1)
             # find all successors of v2, that are not yet explored and operate on new line
@@ -179,11 +181,11 @@ def find_split_requests(request: Request, network_graph: LineGraph) -> List[List
     for start_sub_line in start_tupels:
         if start_sub_line.line.capacity >= request.number_of_passengers:
             result += rec_dfs(start_sub_line, Global.TRANSFER_SECONDS + start_sub_line.duration, 1,
-                              {request.pick_up_location},
-                              [], agg_edges_dict, max_time, request.numb_transfer + Global.NUMBER_OF_EXTRA_TRANSFERS,
-                              request.drop_off_location, network_graph, request.number_of_passengers)
+                               {request.pick_up_location},
+                               [], agg_edges_dict, max_time, request.numb_transfer + Global.NUMBER_OF_EXTRA_TRANSFERS,
+                               request.drop_off_location, network_graph, request.number_of_passengers)
 
-    return result
+    return [x for x in result if len(x) > 0]
 
 
 def fill_time_windows(request: Request, split_req_list: List[SplitRequest]):

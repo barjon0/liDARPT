@@ -1,7 +1,7 @@
 {
   "pathRequestFile": "../input/requests/random_requests/markt-karl/long_window/L9-15-20.csv",
   "pathNetworkFile": "../input/bus_networks/real_networks/markt-karl.json",
-  "outputPath": "../output/liDARPT/run_1/",
+  "outputPath": "../output/liDARPT/run_2/",
   "context": "static",
   "solver": "eventMILP",
   "averageKmH": 65,

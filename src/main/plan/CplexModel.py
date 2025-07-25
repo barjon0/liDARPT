@@ -254,7 +254,7 @@ class CplexSolver:
                     model.linear_constraints.add(
                         lin_expr=[cplex.SparsePair(ind=var_names, val=[-1, 1, -sub_m])],
                         senses=["G"],
-                        rhs=[prev_split.earl_arr_time - sub_split.earl_start_time.get_in_seconds() - sub_m]
+                        rhs=[prev_split.earl_arr_time.get_in_seconds() - sub_split.earl_start_time.get_in_seconds() - sub_m]
                     )
 
             # z variables for request sum to p_r

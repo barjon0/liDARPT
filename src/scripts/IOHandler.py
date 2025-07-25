@@ -78,7 +78,7 @@ def read_requests(request_path, network_graph: LineGraph):
             request = Request(int(row[0]), int(row[5]), pick_up, drop_off,
                               earl_time, earl_time.add_seconds(delay_time + Global.TIME_WINDOW_SECONDS),
                               Timer.conv_string_2_time(row[1]), numb_transfers, fastest_time)
-
+            print(request.id)
             split_lists: List[List[SplitRequest]] = RequestPreprocessing.find_split_requests(request, network_graph)
             for variation_numb in range(len(split_lists)):
                 request.split_requests[variation_numb] = split_lists[variation_numb]
@@ -164,7 +164,6 @@ def main(path_2_config: str):
     Global.MAX_DELAY_EQUATION = config.get('maxDelayEquation')
     Global.TRANSFER_SECONDS = config.get('transferMinutes') * 60
     Global.TIME_WINDOW_SECONDS = config.get('timeWindowMinutes') * 60
-    Global.CPLEX_PATH = config.get('pathCPLEX')
 
     request_path: str = config.get('pathRequestFile')
     network_path: str = config.get('pathNetworkFile')
