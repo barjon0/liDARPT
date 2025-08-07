@@ -46,6 +46,7 @@ class Executor:
         :param final_time: executes plan up to this time
         """
         waiting_bus_stops: List[RouteStop] = []
+        max_occ_bus: Dict[Bus, int] = {x.bus: 0 for x in self.routes}
         curr_time: TimeImpl
         for r_stop in done_r_stops:
             curr_time = r_stop.arriv_time
@@ -61,6 +62,7 @@ class Executor:
                         if this_stop is not wait_stop.stop:
                             raise ValueError("Missmatch between expected pick-up stop and actual")
                         self.passengers[wait_stop.bus].add(u_picked)
+                        max_occ_bus[wait_stop.bus] = max(len(self.passengers[wait_stop.bus]), max_occ_bus[wait_stop.bus])
                         if wait_stop.stop is u_picked.pick_up_location:
                             u_picked.act_start_time = wait_stop.depart_time.sub_seconds(Global.TRANSFER_SECONDS)
                 else:
@@ -123,6 +125,9 @@ class Executor:
                 if time_travelled > (max_travel_time + 0.1):
                     raise ValueError(
                         f"Maximum travel time of request {request.id} not respected; Time travelled: {time_travelled}, Maximum Time: {max_travel_time}")
+
+        Global.MAX_OCCUPANCY = max(max_occ_bus.values())
+        Global.AVG_MAX_OCCUPANCY = sum(max_occ_bus.values()) / len(max_occ_bus.keys())
 
     def execute_plan(self, curr_routes: List[Route], new_requests: Set[Request], time_next: TimeImpl):
         """

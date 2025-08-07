@@ -312,6 +312,9 @@ class CplexSolver:
         if len(var_names) != len(var_names_set):
             print("There are duplicate variable names")
 
+        Global.NUMBER_OF_VARIABLES = self.model.variables.get_num()
+        Global.NUMBER_OF_CONSTRAINTS = self.model.linear_constraints.get_num()
+
         self.model.solve()
 
         print("Objective Value: " + str(self.model.solution.get_objective_value()))

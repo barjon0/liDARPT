@@ -20,6 +20,7 @@ import sys
 import os
 import time
 
+print(os.getcwd())
 import matplotlib.pyplot as plt
 from typing import List, Dict, Tuple, Set
 
@@ -78,7 +79,6 @@ def read_requests(request_path, network_graph: LineGraph):
             request = Request(int(row[0]), int(row[5]), pick_up, drop_off,
                               earl_time, earl_time.add_seconds(delay_time + Global.TIME_WINDOW_SECONDS),
                               Timer.conv_string_2_time(row[1]), numb_transfers, fastest_time)
-            print(request.id)
             split_lists: List[List[SplitRequest]] = RequestPreprocessing.find_split_requests(request, network_graph)
             for variation_numb in range(len(split_lists)):
                 request.split_requests[variation_numb] = split_lists[variation_numb]
@@ -145,8 +145,37 @@ def read_bus_network(network_path: str):
 
     return buses
 
+def read_multi(path_to_req, speed: float, unit_dist: float, output_path_full):
 
-def main(path_2_config: str):
+    Global.COMPUTATION_START_TIME = time.time()
+    Global.AVERAGE_KMH = speed
+    Global.KM_PER_UNIT = unit_dist
+    request_path: str = path_to_req
+
+    network_name = path_to_req.split("/")[-3]
+    network_file_path = "input/bus_networks/real_networks"
+    network_path: str = network_file_path + "/" + network_name + ".json"
+    output_path: str = output_path_full
+
+    return request_path, network_path, output_path
+
+
+def read_single(path_2_config: str):
+    with open(path_2_config, 'r') as config_file:
+        config: dict = json.load(config_file)
+
+    Global.COMPUTATION_START_TIME = time.time()
+    Global.AVERAGE_KMH = config.get('averageKmH')
+    Global.KM_PER_UNIT = config.get('KmPerUnit')
+
+    request_path: str = config.get('pathRequestFile')
+    network_path: str = config.get('pathNetworkFile')
+    output_path: str = config.get('outputPath')
+
+    return request_path, network_path, output_path
+
+
+def main(path_2_config: str, request_path: str, network_path: str, output_path: str):
     """
     Starting a solve with information from config file.
     :param path_2_config: Path to configuration file
@@ -155,8 +184,6 @@ def main(path_2_config: str):
         config: dict = json.load(config_file)
 
     Global.COMPUTATION_START_TIME = time.time()
-    Global.AVERAGE_KMH = config.get('averageKmH')
-    Global.KM_PER_UNIT = config.get('KmPerUnit')
     Global.COST_PER_KM = config.get('costPerKM')
     Global.CO2_PER_KM = config.get('co2PerKM')
     Global.CAPACITY_PER_LINE = config.get('capacityPerLine')
@@ -165,9 +192,6 @@ def main(path_2_config: str):
     Global.TRANSFER_SECONDS = config.get('transferMinutes') * 60
     Global.TIME_WINDOW_SECONDS = config.get('timeWindowMinutes') * 60
 
-    request_path: str = config.get('pathRequestFile')
-    network_path: str = config.get('pathNetworkFile')
-    output_path: str = config.get('outputPath')
     context_str: str = config.get('context')
     solver_str: str = config.get('solver')
 
@@ -186,14 +210,21 @@ def main(path_2_config: str):
     #output_network({x.line for x in network})
 
     context.start_context()
-
-    create_output(requests, context.executor.routes, output_path)
+    create_output(requests, context.executor.routes, output_path, request_path)
 
     print(
         f"Converted and validated plan; generated output in {round(time.time() - Global.COMPUTATION_START_TIME, 4)} seconds")
 
 
-def find_output_path(base_output_path: str):
+def find_output_path(base_output_path: str, request_path: str):
+    # find number requests and translate length
+    buf = request_path.split("/")[-1]
+    first = buf.split(".")[0]
+    minus = first.split("-")
+
+    folder_name = minus[0] + "-" + minus[2]
+
+    """
     max_number = 0
     subdirectories = [name for name in os.listdir(base_output_path)
                       if os.path.isdir(os.path.join(base_output_path, name))]
@@ -207,8 +238,9 @@ def find_output_path(base_output_path: str):
                 max_number = index
         except ValueError:
             pass
-
-    result_path = f"{base_output_path}/run_{max_number + 1}"
+    folder_name = f"run_{max_number + 1}"
+    """
+    result_path = f"{base_output_path}{folder_name}"
     os.makedirs(result_path)
 
     return result_path
@@ -264,7 +296,7 @@ def output_network(lines: Set[Line]):
     plt.show()
 
 
-def create_output(requests: Set[Request], plans: List[Route], base_output_path: str):
+def create_output(requests: Set[Request], plans: List[Route], base_output_path: str, request_path: str):
     """
     Outputs the plan to number of csv files with key performance indicators.
     CSV-file for each bus plan, CSV-file for request information, overall output file and visualization of plan
@@ -277,6 +309,7 @@ def create_output(requests: Set[Request], plans: List[Route], base_output_path: 
 
     numb_denied = 0
     km_booked = 0
+    km_booked_line = 0
     bus_overall_km_dict: Dict[Bus, float] = dict.fromkeys(buses, 0)
     bus_empty_km_dict: Dict[Bus, float] = dict.fromkeys(buses, 0)
     req_km_dict: Dict[Request, float] = dict.fromkeys(requests, 0)
@@ -290,6 +323,7 @@ def create_output(requests: Set[Request], plans: List[Route], base_output_path: 
     for req in requests:
         if req.act_start_time is not None:
             km_booked += req.pick_up_location.calc_distance(req.drop_off_location)
+            km_booked_line += Timer.conv_time_to_dist(req.fastest_time - (Global.TRANSFER_SECONDS * req.numb_transfer))
             request_stop_dict[req] = [(req.act_start_time, req.pick_up_location.id, -1)]
         else:
             numb_denied += 1
@@ -334,9 +368,7 @@ def create_output(requests: Set[Request], plans: List[Route], base_output_path: 
                  str(round(wait_time / 60, 1)), round(Timer.calc_time(req_km_dict[req]) / 60, 2),
                  round((Timer.calc_time(km_req) + req.numb_transfer * Global.TRANSFER_SECONDS) / 60, 2), req.numb_transfer])
         else:
-            csv_out_req.append([str(req), "-", "-", "-", "-", round((
-                                                                                Timer.calc_time(km_req) + req.numb_transfer * Global.TRANSFER_SECONDS) / 60, 2),
-                                req.numb_transfer])
+            csv_out_req.append([str(req), "-", "-", "-", "-", round((Timer.calc_time(km_req) + req.numb_transfer * Global.TRANSFER_SECONDS) / 60, 2), req.numb_transfer])
 
     overall_numbers: List[List[str]] = []
     km_travel_total = round(sum(bus_overall_km_dict.values()), 3)
@@ -348,17 +380,23 @@ def create_output(requests: Set[Request], plans: List[Route], base_output_path: 
 
     try:
         overall_numbers.append([f"system efficiency: {round(km_booked / km_travel_total, 3)}"])
+        overall_numbers.append([f"network system efficiency: {round(km_booked_line / km_travel_total, 3)}"])
         overall_numbers.append([f"deviation factor: {round(acc_km_req / km_booked, 3)}"])
         overall_numbers.append([f"vehicle utilization: {round(acc_km_req / km_used_total, 3)}"])
         overall_numbers.append([f"empty km share: {round(km_empty_total / km_travel_total, 3)}"])
         overall_numbers.append([f"Number of Requests accepted: {count_accepted}"])
+        overall_numbers.append([f"Max Occupancy: {round(Global.MAX_OCCUPANCY, 3)}"])
+        overall_numbers.append([f"Average Max Occupancy: {round(Global.AVG_MAX_OCCUPANCY, 3)}"])
     except ZeroDivisionError:
         pass
     overall_numbers.append([f"Relative MIP Gap Number Requests: {Global.INTEGRALITY_GAP_FIRST}"])
     overall_numbers.append([f"Relative MIP Gap KM travelled: {Global.INTEGRALITY_GAP_SECOND}"])
+    overall_numbers.append([f"Number of Constraints: {Global.NUMBER_OF_CONSTRAINTS}"])
+    overall_numbers.append([f"Number of Variables: {Global.NUMBER_OF_VARIABLES}"])
     overall_numbers.append([f"Number of Split Requests: {Global.NUMBER_OF_SPLITS}"])
     overall_numbers.append([f"Event Graph Nodes: {Global.EVENT_GRAPH_NODES}"])
     overall_numbers.append([f"Event Graph Edges: {Global.EVENT_GRAPH_EDGES}"])
+
     overall_numbers.append(
         [f"computation time for reading in: {time.strftime('%H:%M:%S', time.gmtime(Global.COMPUTATION_TIME_READING))}"])
     overall_numbers.append([
@@ -370,7 +408,7 @@ def create_output(requests: Set[Request], plans: List[Route], base_output_path: 
     overall_numbers.append([
         f"computation time for solving second model: {time.strftime('%H:%M:%S', time.gmtime(Global.COMPUTATION_TIME_SOLVING_SECOND))}"])
 
-    path_to_output = find_output_path(base_output_path)
+    path_to_output = find_output_path(base_output_path, request_path)
     fig = visualize_plan(plans, lines)
     fig.savefig(f"{path_to_output}/plan.png")
 
@@ -445,9 +483,16 @@ def visualize_plan(plan: List[Route], lines: Set[Line]):
 
 
 if __name__ == "__main__":
-    if len(sys.argv) > 1:
-        # The first argument is the file path
+
+    # check if input is part of loop (parameters given direct) -> configFile, requestFile, speed, unitDistance, output_path
+    if len(sys.argv) == 6:
         config_path = sys.argv[1]
-        main(config_path)
+        req_path, net_path, out_path = read_multi(sys.argv[2], float(sys.argv[3]), float(sys.argv[4]), sys.argv[5])
+        main(config_path, req_path, net_path, out_path)
+    elif len(sys.argv) == 2:
+        # only config file given
+        config_path = sys.argv[1]
+        req_path, net_path, out_path = read_single(sys.argv[1])
+        main(config_path, req_path, net_path, out_path)
     else:
-        print("Please provide the file path to the config file as an argument.")
+        print("Please provide the file path to the config file or ( as an argument.")
