@@ -12,10 +12,10 @@
   in {
     devShells.${system}.default = pkgs.mkShell {
       packages = [
-        pkgs.python310  # Install Python 3.10
-        pkgs.python310Packages.pip  # Include pip
-        #pkgs.gcc
-        #pkgs.jetbrains.pycharm-community-src
+        (pkgs.python310.withPackages (ps: with ps; [
+          matplotlib
+          numpy
+        ]))        
       ];
 
       shellHook = ''

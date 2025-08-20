@@ -3,7 +3,6 @@ Script to generate pyplot-plots from DARP and liDARPT solutions
 """
 
 import json
-import math
 from pathlib import Path
 from typing import Dict, List
 import re
@@ -29,11 +28,11 @@ def add_to_dict(network_name, number_requests, time_span, method, val, val_dict)
     else:
         val_dict[network_name] = {(number_requests, time_span): {method: [val]}}
 
-def calc_dist(stop1, stop2, un):
-    unit_dist = math.sqrt(
-        (stop2.coordinates[0] - stop1.coordinates[0]) ** 2 + (stop2.coordinates[1] - stop1.coordinates[1]) ** 2)
-    return unit_dist * un
-
+#def calc_dist(stop1, stop2, un):
+#    unit_dist = math.sqrt(
+ #       (stop2.coordinates[0] - stop1.coordinates[0]) ** 2 + (stop2.coordinates[1] - stop1.coordinates[1]) ** 2)
+ #   return unit_dist * un
+"""
 def calculate_km_booked_instance(network_name: str, req_file_lines: List[str]):
     network_path = "../../input/bus_networks/real_networks/"
     network_file_path = network_path + network_name + ".json"
@@ -55,6 +54,7 @@ def calculate_km_booked_instance(network_name: str, req_file_lines: List[str]):
             km_booked += calc_dist(stops[int(enc[0])], stops[int(enc[-1])], translate_km[network_name])
 
     return km_booked
+    """
 
 def vehUtil_perInst(parent_folder: Path, val_dict: dict, overall_lines: List[str], req_lines: List[str],
                           bus_names: List[str]):
@@ -162,8 +162,8 @@ def get_time_window_length(bus_files: List[str], parent_folder: Path):
         return duration
 
 def requests_to_efficiency(parent_folder: Path, val_dict: dict, overall_lines: List[str], req_lines: List[str],
-                          bus_names: List[str]):
-    network_name = str(parent_folder).split("\\")[-3]
+                          bus_names: List[str], limit: int):
+    network_name = str(parent_folder).split("/")[-3]
     time_span = float(parent_folder.name[1])
     number_req = len(req_lines) - 1
     '''
@@ -177,23 +177,15 @@ def requests_to_efficiency(parent_folder: Path, val_dict: dict, overall_lines: L
     comp_time = 0
     for t in interesting_lines[3:]:
         comp_time += Timer.conv_string_2_time(t.split(" ")[-1]).get_in_seconds()
-    km_booked = calculate_km_booked_instance(network_name, req_lines)
-    interesting_lines = [x for x in overall_lines if "Relative MIP Gap Number Requests:" in x]
-    mipGap = float(interesting_lines[0].split(" ")[-1])
 
-    if comp_time > 900:
-        print(f"For {parent_folder} over 900 seconds")
+    some_line = [x for x in overall_lines if "Event Graph Edges" in x]
+    edges = int(get_val(some_line))
 
-    int_line2 = [x for x in overall_lines if "Number of Requests accepted:" in x]
-    val = float(int_line2[0].split(" ")[-1])
-    #if mipGap > 0 and comp_time < 900:
-     #   print("something stinks here")
+    some_line2 = [x for x in overall_lines if "Event Graph Nodes" in x]
+    nodes = int(get_val(some_line2))
 
-    #int_line3 = [x for x in overall_lines if "Relative MIP Gap Number Requests:" in x]
-    #mipgap = float(int_line3[0].split(" ")[-1])
-
-    if mipGap == 0.0:
-        add_to_dict(network_name, number_req, time_span, True, val * 100 / number_req, val_dict)
+    if limit >= number_req:
+        add_to_dict(network_name, number_req, time_span, True, (nodes, edges, comp_time), val_dict)
 
 
 def event_graph_to_comp_time(parent_folder: Path, val_dict: dict, overall_lines: List[str], req_lines: List[str], bus_names: List[str]):
@@ -211,8 +203,8 @@ def event_graph_to_comp_time(parent_folder: Path, val_dict: dict, overall_lines:
 
     add_to_dict(network_name, nNodes, edges, comp_time, val_dict)
 
-def get_val(line: List[str]):
-    return line[0].split(" ")[-1]
+def get_val(lines: List[str]):
+    return lines[0].split(" ")[-1]
 
 def read_DARP(parent_folder: Path, val_dict: dict, overall_lines: List[str], file_name: str):
     sys_eff_line = [x for x in overall_lines if "System efficiency" in x]
@@ -240,11 +232,11 @@ def read_DARP(parent_folder: Path, val_dict: dict, overall_lines: List[str], fil
         add_to_dict(network_name, number_req, time_span, False, val, val_dict)
 
 
-def rec_check_folder(folder: Path, val_dict: Dict[str, Dict[int, List[float]]], duration: int):
+def rec_check_folder(folder: Path, val_dict: Dict[str, Dict[int, List[float]]], duration: int, limit: int):
     files = list()
     for item in folder.iterdir():
         if item.is_dir():
-            rec_check_folder(item, val_dict, duration)
+            rec_check_folder(item, val_dict, duration, limit)
         if item.is_file():
             files.append(item.name)
 
@@ -264,7 +256,7 @@ def rec_check_folder(folder: Path, val_dict: Dict[str, Dict[int, List[float]]], 
         r_f.close()
         print(folder)
         if duration is None or int(folder.name[1]) == duration:
-           requests_to_efficiency(folder, val_dict, o_lines, r_lines, bus_files)
+           requests_to_efficiency(folder, val_dict, o_lines, r_lines, bus_files, limit)
 
 def rec_check_folder_DARP(parent_folder, val_dict, duration):
     files = list()
@@ -284,17 +276,35 @@ def rec_check_folder_DARP(parent_folder, val_dict, duration):
             read_DARP(parent_folder, val_dict, o_lines, file)
 
 # method receives path to folder root -> searches all subdirectories, looking for overall/request file -> extracts some value and makes plots
-def aggregate_tests(folder_path: str, figure, duration: int=None):
+def aggregate_tests(folder_path: str, figure,  limit: int, duration: int=None):
     root_folder = Path(folder_path)
     val_dict = {}
 
-    rec_check_folder(root_folder, val_dict, duration)
+    rec_check_folder(root_folder, val_dict, duration, limit)
     #rec_check_folder_DARP(root_folder, val_dict, duration)
     count = 0
     sum_all = 0
 
     short_colors = ['b', 'g', 'r', 'c', 'm', 'y', 'k', 'w']
     i = 0
+
+    x = list()
+    y = list()
+    z = list()
+    n_list = sorted(list(val_dict.keys()))
+    for key in n_list:
+        key_list = sorted(list(val_dict[key].keys()), key=lambda x: x[0])
+        for val in key_list:
+            #if val_dict[key][val][0] > sumAll:
+            #    sumAll = val_dict[key][val][0]
+            x.append(val_dict[key][val][True][0][0])
+            y.append(val_dict[key][val][True][0][1])
+            z.append(val_dict[key][val][True][0][2])
+    sc = ax.scatter(x, y, c=z, cmap='viridis')
+    cbar = fig.colorbar(sc, ax=ax)
+    cbar.set_label('seconds')
+    #print("number instances: " + str(sumAll))
+    """
     for network in val_dict.keys():
         x = list()
         y = list()
@@ -305,16 +315,19 @@ def aggregate_tests(folder_path: str, figure, duration: int=None):
                 res = summed / float(len(val_dict[network][ident][method]))
                 y.append(res)
                 sum_all += res
-                x.append(ident[0] / ident[1])
+                x.append(ident[0])
                 count += 1
                 #print(network + " " + str(ident) + " " + str(res))
                 #if res > sum_all:
                 #    sum_all = res
         figure.plot(x, y, 'o', color=short_colors[i], label=network)
+        #figure.plot(x, y, marker='o', linestyle="-", color=short_colors[i], label=network)
         i += 1
     print(f"Counted {count} instances that have optimal solutions, Avg was: {sum_all / count}")
+    """
 
 # method receives path to folder root -> searches all subdirectories, looking for overall/request file -> extracts some value and makes plots
+"""
 def aggregate_difference(folder_path_1: str, folder_path_DARP: str, figure, duration: int = None):
     root_folder_1 = Path(folder_path_1)
     val_dict = {}
@@ -354,6 +367,30 @@ def aggregate_difference(folder_path_1: str, folder_path_DARP: str, figure, dura
         i += 1
     print(f"Counted {count} instances that were faster, Average was: {sum_all / float(count)}")
     print(f"overall number of instances: {count_all}")
+    """
+
+def average_networks(path: str, duration: int):
+    root_folder = Path(path)
+    val_dict = {}
+
+    rec_check_folder(root_folder, val_dict, duration, 100)
+
+    first = list(val_dict.keys())[0]
+    avg_dict = {x: 0 for x in val_dict[first].keys()}
+    for network in val_dict.keys():
+        for instance in val_dict[network]:
+            entries = val_dict[network][instance][True]
+            if len(entries) == 3:
+                if len(set(entries)) != 1:
+                    raise ValueError("There are different number of events")
+                avg_dict[instance] += sum(entries) / 3.0
+            else:
+                print(f"Missing: Instance {instance} for network {network}")
+
+    for key in avg_dict:
+        print(f"For {key[0]} requests, average is: {avg_dict[key] / 5.0}")
+
+
 
 def find_output_path(base_output_path: str):
     max_number = 0
@@ -368,35 +405,24 @@ def find_output_path(base_output_path: str):
 
     return result_path
 
-
-
 fig, ax = plt.subplots()
 ax.set_ylim(1, 10**6)
-#use_path = "../output/InterestingOutput/L3-50"
-#start_folder = Path(use_path)
-
-#i = 0
-'''
-for item in start_folder.iterdir():
-    if item.is_dir():
-        aggregate_tests(use_path + "/" + item.name, ax, short_colors[i])
-        i += 1
-'''
 
 #ax.axhline(y=1.0, color='gray', linestyle='--', linewidth=1)
 ax.set_yscale('log')
-#ax.yaxis.set_major_formatter(ScalarFormatter())
-#ax.yaxis.set_minor_formatter(ScalarFormatter())
+ax.set_xscale('log')
 
 #aggregate_difference("../output/liDARPT", "../output/DARP", ax, None)
-aggregate_tests("../output/liDARPT/liDARPT_4", ax, None)
+aggregate_tests("../../output/liDARPT", ax, 100, None)
 
-#ax.set_title("Computation Time")
-ax.set_xlabel("Temporal Density")
-#ax.set_xlabel("Number of Requests")
-ax.set_ylabel("Number Edges")
+#average_networks("../../output/liDARPT", 3)
 
-ax.legend(loc="lower right")
-#plt.tight_layout()
-#plt.show()
-plt.savefig(find_output_path("../../output/agg_plots"), bbox_inches='tight')
+#ax.set_xlabel("Temporal Density")
+ax.set_xlabel("Number of Nodes")
+ax.set_ylabel("Number of Edges")
+
+y_limits = ax.get_ylim()
+print("Y range:", y_limits)
+
+#ax.legend(loc="lower right")
+plt.savefig(find_output_path("../../output/agg_plots/new_plots"), bbox_inches='tight')

@@ -19,10 +19,10 @@ import json
 import sys
 import os
 import time
-
-print(os.getcwd())
 import matplotlib.pyplot as plt
 from typing import List, Dict, Tuple, Set
+
+print(os.getcwd())
 
 from models.Plan import Route
 from utils import Global, Timer, RequestPreprocessing
@@ -153,7 +153,7 @@ def read_multi(path_to_req, speed: float, unit_dist: float, output_path_full):
     request_path: str = path_to_req
 
     network_name = path_to_req.split("/")[-3]
-    network_file_path = "input/bus_networks/real_networks"
+    network_file_path = "../input/bus_networks/real_networks"
     network_path: str = network_file_path + "/" + network_name + ".json"
     output_path: str = output_path_full
 
@@ -240,7 +240,7 @@ def find_output_path(base_output_path: str, request_path: str):
             pass
     folder_name = f"run_{max_number + 1}"
     """
-    result_path = f"{base_output_path}{folder_name}"
+    result_path = f"{base_output_path}/{folder_name}"
     os.makedirs(result_path)
 
     return result_path
@@ -382,7 +382,7 @@ def create_output(requests: Set[Request], plans: List[Route], base_output_path: 
         overall_numbers.append([f"system efficiency: {round(km_booked / km_travel_total, 3)}"])
         overall_numbers.append([f"network system efficiency: {round(km_booked_line / km_travel_total, 3)}"])
         overall_numbers.append([f"deviation factor: {round(acc_km_req / km_booked, 3)}"])
-        overall_numbers.append([f"vehicle utilization: {round(acc_km_req / km_used_total, 3)}"])
+        overall_numbers.append([f"vehicle utilization: {round(acc_km_req / km_travel_total, 3)}"])
         overall_numbers.append([f"empty km share: {round(km_empty_total / km_travel_total, 3)}"])
         overall_numbers.append([f"Number of Requests accepted: {count_accepted}"])
         overall_numbers.append([f"Max Occupancy: {round(Global.MAX_OCCUPANCY, 3)}"])

@@ -17,7 +17,7 @@ from pathlib import Path
 
 from typing import List
 
-from IOHandler import read_bus_network, read_requests
+from scripts.IOHandler import read_bus_network, read_requests
 from utils import Global
 from models.Demand import Request
 from utils.LineGraph import LineGraph

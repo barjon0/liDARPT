@@ -1,0 +1,23 @@
+km travelled total: 893.123
+empty km total: 300.603
+used km total: 592.52
+system efficiency: 0.865
+network system efficiency: 1.083
+deviation factor: 1.359
+vehicle utilization: 1.771
+empty km share: 0.337
+Number of Requests accepted: 63
+Max Occupancy: 4
+Average Max Occupancy: 3.125
+Relative MIP Gap Number Requests: 27
+Relative MIP Gap KM travelled: 0
+Number of Constraints: 41576
+Number of Variables: 57951
+Number of Split Requests: 343
+Event Graph Nodes: 19667
+Event Graph Edges: 56989
+computation time for reading in: 00:00:00
+computation time for building event graph: 00:00:00
+computation time for building model: 00:00:11
+computation time for solving first model: 00:15:00
+computation time for solving second model: 00:00:00
